@@ -238,4 +238,4 @@ class Game:
             self.moveRight()
         else:
             self.moveLeft()
-        return self.getState(), self.boardVector(), self.getReward(prev_state, self.board), self.checkGameActive()
+        return self.getNpState(), self.getReward(), self.checkGameActive()

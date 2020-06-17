@@ -1,6 +1,6 @@
 import tensorflow as tf
 # Import layers:
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, BatchNormalization, Dropout
 from tensorflow.keras import Model
 
 #Defining network Below:
