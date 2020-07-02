@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
+import datetime
 import numpy as np
 import game
 import actor
@@ -14,9 +15,14 @@ class Actuator(object):
         self.gamma = 0.98
         self.actor = actor.Actor(4)
         self.critic = critic.Critic()
-        learning_rate = 1e-4
+        learning_rate = 1e-3
         self.actor_opt = Adam(learning_rate)
         self.critic_opt = Adam(learning_rate)
+        current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        actor_log_dir = 'logs/gradient_tape/' + current_time + '/actor'
+        critic_log_dir = 'logs/gradient_tape/' + current_time + '/critic'
+        self.actor_summary_writer = tf.summary.create_file_writer(actor_log_dir)
+        self.critic_summary_writer = tf.summary.create_file_writer(critic_log_dir)
 
     def train(self):
         env = game.Game()
@@ -71,9 +77,9 @@ class Actuator(object):
 
                 advantages = q_vals - vals
 
-                actor_loss = -tf.math.reduce_mean(log_probs * advantages + 1e-4 * net_entropy)
-                critic_loss = -tf.math.reduce_mean(tf.math.pow(advantages, 2))
-
+                actor_loss = tf.math.reduce_mean(-log_probs * advantages) - 1e-4 * net_entropy
+                critic_loss = tf.math.reduce_mean(tf.math.pow(advantages, 2)) - 1e-4 * net_entropy
+            
             gradients = tape.gradient(actor_loss, self.actor.trainable_variables)
             self.actor_opt.apply_gradients(zip(gradients, self.actor.trainable_variables))
 
@@ -82,17 +88,23 @@ class Actuator(object):
 
             del tape
 
+            self._log(actor_loss, critic_loss, episode)
+
             if episode % 10 == 0:
                 print(f'Avg reward: {np.mean(rewards)}')
-
-
-
 
 
     @tf.function
     def _update(self, loss, tape, optimizer, model):
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+    
+    def _log(self, actor_loss, critic_loss, epoch):
+        with self.actor_summary_writer.as_default():
+            tf.summary.scalar('actor', actor_loss, step=epoch)
+        with self.critic_summary_writer.as_default():
+            tf.summary.scalar('critic', critic_loss, step=epoch)
 
 
 a = Actuator()

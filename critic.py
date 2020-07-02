@@ -8,9 +8,10 @@ class Critic(Model):
   def __init__(self):
     super(Critic, self).__init__()
     # Define layers of the network:
-    self.critic_dense_0 = Dense(128, activation='relu')
-    self.critic_dense_1 = Dense(64, activation='relu')
-    self.critic_dense_2 = Dense(1)
+    self.critic_dense_0 = Dense(256, activation='relu')
+    self.critic_dense_1 = Dense(128, activation='relu')
+    self.critic_dense_2 = Dense(64, activation='relu')
+    self.critic_dense_3 = Dense(1)
 
   def call(self, x, training=False):
     # Call layers of network on input x
@@ -25,4 +26,8 @@ class Critic(Model):
     if training:
         x = Dropout(.1)(x)
     x = self.critic_dense_2(x)
+    x = BatchNormalization()(x)
+    if training:
+        x = Dropout(.1)(x)
+    x = self.critic_dense_3(x)
     return x

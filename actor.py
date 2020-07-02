@@ -8,9 +8,10 @@ class Actor(Model):
   def __init__(self, action_dim):
     super(Actor, self).__init__()
     # Define layers of the network:
-    self.actor_dense_0 = Dense(128, activation='relu')
-    self.actor_dense_1 = Dense(64, activation='relu')
-    self.actor_dense_2 = Dense(action_dim, activation='softmax')
+    self.actor_dense_0 = Dense(256, activation='relu')
+    self.actor_dense_1 = Dense(128, activation='relu')
+    self.actor_dense_2 = Dense(64, activation='relu')
+    self.actor_dense_3 = Dense(action_dim, activation='softmax')
 
   def call(self, x, training=False):
     # Call layers of network on input x
@@ -25,4 +26,8 @@ class Actor(Model):
     if training:
         x = Dropout(.1)(x)
     x = self.actor_dense_2(x)
+    x = BatchNormalization()(x)
+    if training:
+        x = Dropout(.1)(x)
+    x = self.actor_dense_3(x)
     return x

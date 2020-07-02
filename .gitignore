@@ -223,4 +223,7 @@ GitHub.sublime-settings
 pyvenv.cfg
 pip-selfcheck.json
 
+# Tensorboard logs
+logs/
+
 # End of https://www.toptal.com/developers/gitignore/api/python,macos,linux,sublimetext,virtualenv
