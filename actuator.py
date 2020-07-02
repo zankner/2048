@@ -11,18 +11,20 @@ class Actuator(object):
 
     def __init__(self):
         self.episodes = 1000
-        self.num_steps = 300
         self.gamma = 0.98
         self.actor = actor.Actor(4)
         self.critic = critic.Critic()
-        learning_rate = 1e-3
-        self.actor_opt = Adam(learning_rate)
-        self.critic_opt = Adam(learning_rate)
+        actor_learning_rate = 1e-2
+        critic_learning_rate = 1e-6
+        self.actor_opt = Adam(actor_learning_rate)
+        self.critic_opt = Adam(critic_learning_rate)
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         actor_log_dir = 'logs/gradient_tape/' + current_time + '/actor'
         critic_log_dir = 'logs/gradient_tape/' + current_time + '/critic'
+        reward_log_dir = 'logs/gradient_tape/' + current_time + '/reward'
         self.actor_summary_writer = tf.summary.create_file_writer(actor_log_dir)
         self.critic_summary_writer = tf.summary.create_file_writer(critic_log_dir)
+        self.reward_summary_writer = tf.summary.create_file_writer(reward_log_dir)
 
     def train(self):
         env = game.Game()
@@ -32,11 +34,12 @@ class Actuator(object):
             log_probs = []
             vals = []
             rewards = []
+            active = True
 
             env.reset()
 
             with tf.GradientTape(persistent=True) as tape:
-                for step in range(self.num_steps):
+                while(active):
                     state = env.getNpState()
                     state = tf.reshape(state, [1, env.observation_space[1]])
                     val = self.critic(state, training=True)
@@ -48,8 +51,8 @@ class Actuator(object):
                     action_dist_np = [action_dist_np[i] for i in possible_actions]
                     action_dist_np /= np.sum(action_dist_np)
                     action = np.random.choice(possible_actions, p = action_dist_np)
-                    test = tf.gather(tf.squeeze(action_dist), [action])
-                    log_prob = tf.math.log(test)
+                    action_prob = tf.gather(tf.squeeze(action_dist), [action])
+                    log_prob = tf.math.log(action_prob)
                     entropy = tf.math.reduce_sum(
                         tf.math.reduce_mean(action_dist) * tf.math.log(action_dist))
                     
@@ -60,7 +63,8 @@ class Actuator(object):
                     log_probs.append(log_prob)
                     net_entropy += entropy
 
-                    if not active or step == self.num_steps - 1:
+                    if not active:
+                        rewards[-1] -= 10
                         state = tf.reshape(state, [1,16])
                         q_val = self.critic(state, training=True)
                         break
@@ -77,8 +81,8 @@ class Actuator(object):
 
                 advantages = q_vals - vals
 
-                actor_loss = tf.math.reduce_mean(-log_probs * advantages) - 1e-4 * net_entropy
-                critic_loss = tf.math.reduce_mean(tf.math.pow(advantages, 2)) - 1e-4 * net_entropy
+                actor_loss = (tf.math.reduce_mean(log_probs * advantages) + 1e-4 * net_entropy)
+                critic_loss = -tf.math.reduce_mean(tf.math.pow(advantages, 2))
             
             gradients = tape.gradient(actor_loss, self.actor.trainable_variables)
             self.actor_opt.apply_gradients(zip(gradients, self.actor.trainable_variables))
@@ -88,10 +92,11 @@ class Actuator(object):
 
             del tape
 
-            self._log(actor_loss, critic_loss, episode)
+            self._log(actor_loss, critic_loss, np.mean(rewards), episode)
 
             if episode % 10 == 0:
                 print(f'Avg reward: {np.mean(rewards)}')
+                print(env.getNpState())
 
 
     @tf.function
@@ -100,11 +105,13 @@ class Actuator(object):
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
     
-    def _log(self, actor_loss, critic_loss, epoch):
+    def _log(self, actor_loss, critic_loss, reward, epoch):
         with self.actor_summary_writer.as_default():
             tf.summary.scalar('actor', actor_loss, step=epoch)
         with self.critic_summary_writer.as_default():
             tf.summary.scalar('critic', critic_loss, step=epoch)
+        with self.reward_summary_writer.as_default():
+            tf.summary.scalar('reward', reward, step=epoch)
 
 
 a = Actuator()

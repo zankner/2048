@@ -176,10 +176,14 @@ class Game:
 
     def getReward(self):
         logReward = 0
+        highestEl = 0
         for row in self.board:
             for element in row:
                 if element != 0:
                     logReward += math.log(element, 2)
+                    if element > highestEl:
+                        highestEl = element
+        logReward += math.log(highestEl, 2)
         return logReward
 
 
