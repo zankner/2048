@@ -54,6 +54,8 @@ class Actuator(object):
                         tf.math.reduce_mean(action_dist) * tf.math.log(action_dist))
                     
                     state, reward, active, _ = env.step(action)
+                    print(reward)
+                    print(active)
                     reward = tf.Variable(reward)
 
                     vals.append(val)
@@ -61,7 +63,7 @@ class Actuator(object):
                     log_probs.append(log_prob)
                     net_entropy += entropy
 
-                    if step == 199 or not active:
+                    if step == 199 or active:
                         state = tf.expand_dims(state, 0)
                         q_val = self.critic(state, training=True)
                         break
@@ -89,7 +91,7 @@ class Actuator(object):
 
             del tape
 
-            self._log(actor_loss, critic_loss, np.mean(rewards), episode)
+            self._log(actor_loss, critic_loss, np.sum(rewards), episode)
 
 
     @tf.function
