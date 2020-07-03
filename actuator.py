@@ -57,6 +57,7 @@ class Actuator(object):
                         tf.math.reduce_mean(action_dist) * tf.math.log(action_dist))
                     
                     state, reward, active = env.step(action)
+                    reward = tf.Variable(reward)
 
                     vals.append(val)
                     rewards.append(reward)
@@ -64,7 +65,7 @@ class Actuator(object):
                     net_entropy += entropy
 
                     if not active:
-                        rewards[-1] -= 10
+                        rewards[-1] = rewards[-1] - 10
                         state = tf.reshape(state, [1,16])
                         q_val = self.critic(state, training=True)
                         break
