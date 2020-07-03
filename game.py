@@ -20,6 +20,7 @@ class Game:
             secondCol = random.randint(0,len(self.board[0])-1)
         self.board[firstRow][firstCol] = 2
         self.board[secondRow][secondCol] = 2
+        self.reward = 0
         self.score = 0
         return self.getState(), self.boardVector()
 
@@ -176,15 +177,16 @@ class Game:
 
     def getReward(self):
         logReward = 0
-        highestEl = 0
+        emptyReward = 0
         for row in self.board:
             for element in row:
                 if element != 0:
                     logReward += math.log(element, 2)
-                    if element > highestEl:
-                        highestEl = element
-        logReward += math.log(highestEl, 2)
-        return logReward
+                else:
+                    emptyReward += 1
+        reward = logReward + emptyReward - self.reward
+        self.reward = reward
+        return logReward + (.5 * emptyReward)
 
 
     def boardVector(self):

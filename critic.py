@@ -18,15 +18,12 @@ class Critic(Model):
     # Use the training variable to handle adding layers such as Dropout
     # and Batch Norm only during training
     x = self.critic_dense_0(x)
-    x = BatchNormalization()(x)
     if training:
         x = Dropout(.1)(x)
     x = self.critic_dense_1(x)
-    x = BatchNormalization()(x)
     if training:
         x = Dropout(.1)(x)
     x = self.critic_dense_2(x)
-    x = BatchNormalization()(x)
     if training:
         x = Dropout(.1)(x)
     x = self.critic_dense_3(x)

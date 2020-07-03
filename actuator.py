@@ -11,11 +11,11 @@ class Actuator(object):
 
     def __init__(self):
         self.episodes = 1000
-        self.gamma = 0.98
+        self.gamma = 0.99
         self.actor = actor.Actor(4)
         self.critic = critic.Critic()
-        actor_learning_rate = 1e-2
-        critic_learning_rate = 1e-6
+        actor_learning_rate = 1e-4
+        critic_learning_rate = 1e-2
         self.actor_opt = Adam(actor_learning_rate)
         self.critic_opt = Adam(critic_learning_rate)
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -53,7 +53,7 @@ class Actuator(object):
                     action = np.random.choice(possible_actions, p = action_dist_np)
                     action_prob = tf.gather(tf.squeeze(action_dist), [action])
                     log_prob = tf.math.log(action_prob)
-                    entropy = tf.math.reduce_sum(
+                    entropy = -tf.math.reduce_sum(
                         tf.math.reduce_mean(action_dist) * tf.math.log(action_dist))
                     
                     state, reward, active = env.step(action)
@@ -81,8 +81,8 @@ class Actuator(object):
 
                 advantages = q_vals - vals
 
-                actor_loss = (tf.math.reduce_mean(log_probs * advantages) + 1e-4 * net_entropy)
-                critic_loss = -tf.math.reduce_mean(tf.math.pow(advantages, 2))
+                actor_loss = (-tf.math.reduce_mean(log_probs * advantages) + 1e-3 * net_entropy)
+                critic_loss = tf.math.reduce_mean(tf.math.pow(advantages, 2))
             
             gradients = tape.gradient(actor_loss, self.actor.trainable_variables)
             self.actor_opt.apply_gradients(zip(gradients, self.actor.trainable_variables))
