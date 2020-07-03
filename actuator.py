@@ -5,6 +5,7 @@ import numpy as np
 import game
 import actor
 import critic
+import gym
 
 
 class Actuator(object):
@@ -12,7 +13,7 @@ class Actuator(object):
     def __init__(self):
         self.episodes = 1000
         self.gamma = 0.99
-        self.actor = actor.Actor(4)
+        self.actor = actor.Actor(2)
         self.critic = critic.Critic()
         actor_learning_rate = 1e-4
         critic_learning_rate = 1e-2
@@ -27,7 +28,7 @@ class Actuator(object):
         self.reward_summary_writer = tf.summary.create_file_writer(reward_log_dir)
 
     def train(self):
-        env = game.Game()
+        env = gym.make("CartPole-v0")
         net_entropy = 0
         
         for episode in range(self.episodes):
@@ -38,26 +39,21 @@ class Actuator(object):
                 rewards = []
                 active = True
 
-                env.reset()
+                state = env.reset()
 
-                while(active):
-                    state = env.getNpState()
-                    state = tf.reshape(state, [1, env.observation_space[1]])
+                for step in range(200):
+                    state = tf.expand_dims(state, 0)
                     val = self.critic(state, training=True)
                     action_dist = self.actor(state, training=True)
                     action_dist_np = action_dist.numpy()
                     action_dist_np = np.squeeze(action_dist_np)
-
-                    possible_actions = env.getPossible()
-                    action_dist_np = [action_dist_np[i] for i in possible_actions]
-                    action_dist_np /= np.sum(action_dist_np)
-                    action = np.random.choice(possible_actions, p = action_dist_np)
+                    action = np.random.choice([0,1], p = action_dist_np)
                     action_prob = tf.gather(tf.squeeze(action_dist), [action])
                     log_prob = tf.math.log(action_prob)
                     entropy = -tf.math.reduce_sum(
                         tf.math.reduce_mean(action_dist) * tf.math.log(action_dist))
                     
-                    state, reward, active = env.step(action)
+                    state, reward, active, _ = env.step(action)
                     reward = tf.Variable(reward)
 
                     vals.append(val)
@@ -65,9 +61,8 @@ class Actuator(object):
                     log_probs.append(log_prob)
                     net_entropy += entropy
 
-                    if not active:
-                        rewards[-1] = rewards[-1] - 10
-                        state = tf.reshape(state, [1,16])
+                    if step == 199 or not active:
+                        state = tf.expand_dims(state, 0)
                         q_val = self.critic(state, training=True)
                         break
 
@@ -95,10 +90,6 @@ class Actuator(object):
             del tape
 
             self._log(actor_loss, critic_loss, np.mean(rewards), episode)
-
-            if episode % 10 == 0:
-                print(f'Avg reward: {np.mean(rewards)}')
-                print(env.getNpState())
 
 
     @tf.function
