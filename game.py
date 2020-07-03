@@ -186,7 +186,7 @@ class Game:
                     emptyReward += 1
         reward = logReward + emptyReward - self.reward
         self.reward = reward
-        return logReward + (.5 * emptyReward)
+        return reward
 
 
     def boardVector(self):

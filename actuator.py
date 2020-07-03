@@ -81,8 +81,8 @@ class Actuator(object):
 
                 advantages = q_vals - vals
 
-                actor_loss = (-tf.math.reduce_mean(log_probs * advantages) + 1e-3 * net_entropy)
-                critic_loss = tf.math.reduce_mean(tf.math.pow(advantages, 2))
+                actor_loss = -(tf.math.reduce_mean(log_probs * advantages) + 1e-3 * net_entropy)
+                critic_loss = 0.5 * tf.math.reduce_mean(tf.math.pow(advantages, 2))
             
             gradients = tape.gradient(actor_loss, self.actor.trainable_variables)
             self.actor_opt.apply_gradients(zip(gradients, self.actor.trainable_variables))
