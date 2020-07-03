@@ -31,14 +31,15 @@ class Actuator(object):
         net_entropy = 0
         
         for episode in range(self.episodes):
-            log_probs = []
-            vals = []
-            rewards = []
-            active = True
-
-            env.reset()
-
             with tf.GradientTape(persistent=True) as tape:
+
+                log_probs = []
+                vals = []
+                rewards = []
+                active = True
+
+                env.reset()
+
                 while(active):
                     state = env.getNpState()
                     state = tf.reshape(state, [1, env.observation_space[1]])
