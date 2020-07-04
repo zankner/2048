@@ -5,7 +5,6 @@ import numpy as np
 import game
 import actor
 import critic
-import gym
 
 
 class Actuator(object):
@@ -28,18 +27,19 @@ class Actuator(object):
         self.reward_summary_writer = tf.summary.create_file_writer(reward_log_dir)
 
     def train(self):
-        env = gym.make("CartPole-v0")
+        env = game.Game()
 
         for episode in range(1000):
             with tf.GradientTape(persistent=True) as tape:
                 rewards = []
                 log_probs = []
                 vals = []
-                done = False
+                active = True
 
-                state = env.reset()
+                env.reset()
 
-                while not done:
+                while active:
+                    state = eng.getNpState()
                     state = tf.expand_dims(state, 0)
                     action_dist = self.actor(state)
                     state_val = self.critic(state)
@@ -49,7 +49,7 @@ class Actuator(object):
                     prob = tf.squeeze(tf.gather(action_dist, [action], axis=1))
                     log_prob = tf.math.log(prob)
 
-                    state, reward, done, _ = env.step(action)
+                    state, reward, active = env.step(action)
 
                     log_probs.append(log_prob)
                     rewards.append(reward)
