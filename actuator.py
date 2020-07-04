@@ -30,7 +30,7 @@ class Actuator(object):
     def train(self):
         env = gym.make("CartPole-v0")
 
-        for episode in range(1):
+        for episode in range(1000):
             with tf.GradientTape(persistent=True) as tape:
                 rewards = []
                 log_probs = []
@@ -39,7 +39,7 @@ class Actuator(object):
 
                 state = env.reset()
 
-                for i in range(3):
+                while not done:
                     state = tf.expand_dims(state, 0)
                     action_dist = self.actor(state)
                     state_val = self.critic(state)
