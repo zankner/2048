@@ -20,9 +20,7 @@ class Game:
             secondCol = random.randint(0,len(self.board[0])-1)
         self.board[firstRow][firstCol] = 2
         self.board[secondRow][secondCol] = 2
-        self.reward = 0
-        self.score = 0
-        return self.getState(), self.boardVector()
+        return self.getNpState()
 
     def randomInsert(self):
         possibleCoords = []
@@ -176,59 +174,13 @@ class Game:
         return store
 
     def getReward(self):
-        logReward = 0
-        emptyReward = 0
+        highestEl = 0
         for row in self.board:
-            for element in row:
-                if element != 0:
-                    logReward += math.log(element, 2)
-                else:
-                    emptyReward += 1
-        reward = logReward + emptyReward - self.reward
-        self.reward = reward
-        return reward
+            for col in row:
+                if col > highestEl:
+                    highestEl = col
+        return math.log(highestEl, 2)
 
-
-    def boardVector(self):
-        state = []
-        for row in self.board:
-            for element in row:
-                if element == 0:
-                    state.append(0)
-                else:
-                    state.append(math.log(element, 2))
-        return np.asarray(state)
-
-    def getHighest(self):
-        elements = [el for col in self.board for el in col]
-        self.score += math.log(max(elements), 2)
-
-    def emptyCells(self, board):
-        count = 0
-        for row in board:
-            for el in row:
-                if el == 0:
-                    count += 1
-        return count
-
-    def newMax(self, curState, prevState):
-        curState = [el for row in curState for el in row]
-        prevState = [el for row in prevState for el in row]
-        if max(curState) == max(prevState):
-            return 0
-        else:
-            return math.log(max(curState), 2)
-
-    def getState(self):
-        power_mat = np.zeros(shape=(4,4,16),dtype=np.float32)
-        for i in range(4):
-            for j in range(4):
-                if(self.board[i][j]==0):
-                    power_mat[i][j][0] = 1.0
-                else:
-                    power = int(math.log(self.board[i][j],2))
-                    power_mat[i][j][power] = 1.0
-        return power_mat
 
     def getNpState(self):
         return np.asarray(self.board)
