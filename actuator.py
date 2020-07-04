@@ -39,7 +39,7 @@ class Actuator(object):
 
                 state = env.reset()
 
-                while not done:
+                for i in range(3):
                     state = tf.expand_dims(state, 0)
                     action_dist = self.actor(state)
                     state_val = self.critic(state)
@@ -62,8 +62,6 @@ class Actuator(object):
                 for i in range(len(rewards) - 1):
                     q_vals.append(rewards[i] + self.gamma * vals[i + 1])
                 q_vals.append(rewards[-1] + self.gamma * q_val_terminal)
-
-                q_vals.reverse()
 
                 log_probs = tf.convert_to_tensor(log_probs)
                 vals = tf.convert_to_tensor(vals)
