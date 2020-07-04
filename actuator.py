@@ -29,65 +29,59 @@ class Actuator(object):
 
     def train(self):
         env = gym.make("CartPole-v0")
-        net_entropy = 0
-        
-        for episode in range(self.episodes):
-            with tf.GradientTape(persistent=True) as tape:
 
+        for episode in range(1):
+            with tf.GradientTape(persistent=True) as tape:
+                rewards = []
                 log_probs = []
                 vals = []
-                rewards = []
-                active = True
+                done = False
 
                 state = env.reset()
 
-                for step in range(200):
+                while not done:
                     state = tf.expand_dims(state, 0)
-                    val = self.critic(state, training=True)
-                    action_dist = self.actor(state, training=True)
-                    action_dist_np = action_dist.numpy()
-                    action_dist_np = np.squeeze(action_dist_np)
-                    action = np.random.choice([0,1], p = action_dist_np)
-                    action_prob = tf.gather(tf.squeeze(action_dist), [action])
-                    log_prob = tf.math.log(action_prob)
-                    entropy = -tf.math.reduce_sum(
-                        tf.math.reduce_mean(action_dist) * tf.math.log(action_dist))
-                    
-                    state, reward, active, _ = env.step(action)
-                    print(reward)
-                    print(active)
-                    reward = tf.Variable(reward)
+                    action_dist = self.actor(state)
+                    state_val = self.critic(state)
 
-                    vals.append(val)
-                    rewards.append(reward)
+                    action = tf.squeeze(tf.random.categorical(
+                        tf.math.log(action_dist), 1)).numpy()
+                    prob = tf.squeeze(tf.gather(action_dist, [action], axis=1))
+                    log_prob = tf.math.log(prob)
+
+                    state, reward, done, _ = env.step(action)
+
                     log_probs.append(log_prob)
-                    net_entropy += entropy
+                    rewards.append(reward)
+                    vals.append(state_val)
 
-                    if step == 199 or active:
-                        state = tf.expand_dims(state, 0)
-                        q_val = self.critic(state, training=True)
-                        break
+                state = tf.expand_dims(state, 0)
+                q_val_terminal = self.critic(state)
 
-                q_vals = [0 for i in range(len(rewards))]
-                for t in reversed(range(len(rewards))):
-                    q_val = rewards[t] + self.gamma * q_val
-                    q_vals[t] = q_val
+                q_vals = []
+                for i in range(len(rewards) - 1):
+                    q_vals.append(rewards[i] + self.gamma * vals[i + 1])
+                q_vals.append(rewards[-1] + self.gamma * q_val_terminal)
 
-                vals = tf.convert_to_tensor(vals)
-                rewards = tf.convert_to_tensor(rewards)
+                q_vals.reverse()
+
                 log_probs = tf.convert_to_tensor(log_probs)
+                vals = tf.convert_to_tensor(vals)
                 q_vals = tf.convert_to_tensor(q_vals)
 
                 advantages = q_vals - vals
 
-                actor_loss = -(tf.math.reduce_mean(log_probs * advantages) + 1e-3 * net_entropy)
-                critic_loss = 0.5 * tf.math.reduce_mean(tf.math.pow(advantages, 2))
-            
-            gradients = tape.gradient(actor_loss, self.actor.trainable_variables)
-            self.actor_opt.apply_gradients(zip(gradients, self.actor.trainable_variables))
+                log_probs = tf.convert_to_tensor(log_probs)
+                advantages = tf.convert_to_tensor(advantages)
 
-            gradients = tape.gradient(critic_loss, self.critic.trainable_variables)
-            self.critic_opt.apply_gradients(zip(gradients, self.critic.trainable_variables))
+                actor_loss = -tf.reduce_mean(log_probs * advantages)
+                critic_loss = tf.reduce_mean(tf.math.pow(advantages, 2))
+
+            actor_gradients = tape.gradient(actor_loss, self.actor.trainable_variables)
+            self.actor_opt.apply_gradients(zip(actor_gradients, self.actor.trainable_variables))
+
+            critic_gradients = tape.gradient(critic_loss, self.critic.trainable_variables)
+            self.critic_opt.apply_gradients(zip(critic_gradients, self.critic.trainable_variables))
 
             del tape
 
