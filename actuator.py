@@ -30,7 +30,6 @@ class Actuator(object):
         env = game.Game()
 
         for episode in range(1000):
-            print(episode)
             with tf.GradientTape(persistent=True) as tape:
                 rewards = []
                 log_probs = []
@@ -40,14 +39,15 @@ class Actuator(object):
                 env.reset()
 
 
+                counter = 0
                 while(active):
+                    counter +=1
                     state = env.getNpState()
                     state = tf.expand_dims(state, 0)
                     action_logits = self.actor(state)
                     state_val = self.critic(state)
 
                     possible_actions = env.getPossible()
-                    possible_actions = [1,2,3]
                     action_mask = [[action in possible_actions for action in range(4)]]
                     masked_action_logits = tf.expand_dims(tf.boolean_mask(action_logits, action_mask), 0)
                     masked_action_dist = tf.nn.softmax(masked_action_logits)
