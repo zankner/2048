@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.losses import categorical_crossentropy
 import datetime
 import numpy as np
 import game
@@ -35,9 +36,9 @@ class Actuator(object):
                 log_probs = []
                 vals = []
                 active = True
+                entropy = tf.Variable(0.0)
 
                 env.reset()
-
 
                 counter = 0
                 while(active):
@@ -55,6 +56,9 @@ class Actuator(object):
                         tf.math.log(masked_action_dist), 1)).numpy()
                     prob = tf.squeeze(tf.gather(masked_action_dist, [possible_index], axis=1))
                     log_prob = tf.math.log(prob)
+                    
+                    entropy = entropy + categorical_crossentropy(
+                            masked_action_dist, masked_action_dist)
 
                     action = possible_actions[possible_index]
 
@@ -81,7 +85,8 @@ class Actuator(object):
                 log_probs = tf.convert_to_tensor(log_probs)
                 advantages = tf.convert_to_tensor(advantages)
 
-                actor_loss = -tf.reduce_mean(log_probs * advantages)
+                actor_loss = -tf.reduce_mean(log_probs * advantages) - 1e-4 * entropy
+                actor_loss = tf.squeeze(actor_loss)
                 critic_loss = tf.reduce_mean(tf.math.pow(advantages, 2))
 
             actor_gradients = tape.gradient(actor_loss, self.actor.trainable_variables)
