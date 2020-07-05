@@ -11,7 +11,7 @@ class Actor(Model):
     self.actor_dense_0 = Dense(256, activation='relu')
     self.actor_dense_1 = Dense(128, activation='relu')
     self.actor_dense_2 = Dense(64, activation='relu')
-    self.actor_dense_3 = Dense(action_dim, activation='softmax')
+    self.actor_dense_3 = Dense(action_dim)
 
   def call(self, x, training=False):
     # Call layers of network on input x

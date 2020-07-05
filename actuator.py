@@ -12,7 +12,7 @@ class Actuator(object):
     def __init__(self):
         self.episodes = 1000
         self.gamma = 0.99
-        self.actor = actor.Actor(2)
+        self.actor = actor.Actor(4)
         self.critic = critic.Critic()
         actor_learning_rate = 1e-4
         critic_learning_rate = 1e-2
@@ -30,6 +30,7 @@ class Actuator(object):
         env = game.Game()
 
         for episode in range(1000):
+            print(episode)
             with tf.GradientTape(persistent=True) as tape:
                 rewards = []
                 log_probs = []
@@ -38,16 +39,24 @@ class Actuator(object):
 
                 env.reset()
 
-                while active:
-                    state = eng.getNpState()
+
+                while(active):
+                    state = env.getNpState()
                     state = tf.expand_dims(state, 0)
-                    action_dist = self.actor(state)
+                    action_logits = self.actor(state)
                     state_val = self.critic(state)
 
-                    action = tf.squeeze(tf.random.categorical(
-                        tf.math.log(action_dist), 1)).numpy()
-                    prob = tf.squeeze(tf.gather(action_dist, [action], axis=1))
+                    possible_actions = env.getPossible()
+                    possible_actions = [1,2,3]
+                    action_mask = [[action in possible_actions for action in range(4)]]
+                    masked_action_logits = tf.expand_dims(tf.boolean_mask(action_logits, action_mask), 0)
+                    masked_action_dist = tf.nn.softmax(masked_action_logits)
+                    possible_index = tf.squeeze(tf.random.categorical(
+                        tf.math.log(masked_action_dist), 1)).numpy()
+                    prob = tf.squeeze(tf.gather(masked_action_dist, [possible_index], axis=1))
                     log_prob = tf.math.log(prob)
+
+                    action = possible_actions[possible_index]
 
                     state, reward, active = env.step(action)
 
