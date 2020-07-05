@@ -178,13 +178,12 @@ class Game:
     def getReward(self):
         logReward = 0
         emptyReward = 0
+        prev_reward = 0
         for row in self.board:
             for element in row:
-                if element != 0:
-                    logReward += math.log(element, 2)
-                else:
-                    emptyReward += 1
-        reward = logReward + emptyReward - self.reward
+                if element > prev_reward:
+                    prev_reward = element
+        reward = prev_reward
         self.reward = reward
         return reward
 
