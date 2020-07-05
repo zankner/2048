@@ -23,6 +23,8 @@ class Actuator(object):
         actor_log_dir = 'logs/gradient_tape/' + current_time + '/actor'
         critic_log_dir = 'logs/gradient_tape/' + current_time + '/critic'
         reward_log_dir = 'logs/gradient_tape/' + current_time + '/reward'
+        self.actor_save_dir = 'saved_models/' + current_time + '/actor'
+        self.critic_save_dir = 'saved_models/' + current_time + '/critic'
         self.actor_summary_writer = tf.summary.create_file_writer(actor_log_dir)
         self.critic_summary_writer = tf.summary.create_file_writer(critic_log_dir)
         self.reward_summary_writer = tf.summary.create_file_writer(reward_log_dir)
@@ -30,7 +32,7 @@ class Actuator(object):
     def train(self):
         env = game.Game()
 
-        for episode in range(1000):
+        for episode in range(1):
             with tf.GradientTape(persistent=True) as tape:
                 rewards = []
                 log_probs = []
@@ -99,6 +101,9 @@ class Actuator(object):
 
             self._log(actor_loss, critic_loss, np.sum(rewards), episode)
 
+    def _save(self):
+        self.actor.save(self.actor_save_dir, save_format='tf')
+        self.critic.save(self.critic_save_dir, save_format='tf')
 
     @tf.function
     def _update(self, loss, tape, optimizer, model):
@@ -115,5 +120,7 @@ class Actuator(object):
             tf.summary.scalar('reward', reward, step=epoch)
 
 
+
 a = Actuator()
 a.train()
+a._save()
