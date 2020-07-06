@@ -22,6 +22,7 @@ class Game:
         self.board[secondRow][secondCol] = 2
         self.reward = 0
         self.score = 0
+        self.highest = 0
         return self.getState(), self.boardVector()
 
     def randomInsert(self):
@@ -37,18 +38,11 @@ class Game:
 
 
     def checkGameActive(self):
-        for row in self.board:
-            if 0 in row:
-                return True
-        for row in range(len(self.board)):
-            for col in range(len(self.board[0])-1):
-                if self.board[row][col] == self.board[row][col+1]:
-                    return True
-        for col in range(len(self.board[0])):
-            for row in range(len(self.board)-1):
-                if self.board[row][col] == self.board[row+1][col]:
-                    return True
-        return False
+        possible = self.getPossible()
+        if len(possible) == 0:
+            return False
+        else:
+            return True
 
 
     def moveUp(self):
@@ -83,9 +77,17 @@ class Game:
             for r, row in enumerate(self.board):
                 colReal.append(row[col])
             replace = self.merge(colReal, True)
-            replace = replace[::-1]
+            blankSpots = 0
+            for i in reversed(replace):
+                if i == 0:
+                    blankSpots += 1
+                else:
+                    break
+            propOrder = [0 for i in range(len(replace))]
+            for i, el in enumerate(replace):
+                propOrder[(i + blankSpots) % len(propOrder)] = el
             for i in range(len(self.board)):
-                self.board[i][col] = replace[i]
+                self.board[i][col] = propOrder[i]
         self.randomInsert()
 
 
@@ -96,9 +98,17 @@ class Game:
             for r, row in enumerate(testState):
                 colReal.append(row[col])
             replace = self.merge(colReal, False)
-            replace = replace[::-1]
+            blankSpots = 0
+            for i in reversed(replace):
+                if i == 0:
+                    blankSpots += 1
+                else:
+                    break
+            propOrder = [0 for i in range(len(replace))]
+            for i, el in enumerate(replace):
+                propOrder[(i + blankSpots) % len(propOrder)] = el
             for i in range(len(testState)):
-                testState[i][col] = replace[i]
+                testState[i][col] = propOrder[i]
         if testState == self.board:
             return False
         else:
@@ -106,19 +116,35 @@ class Game:
 
 
     def moveRight(self):
-        for i, row in enumerate(self.board):
+        for r, row in enumerate(self.board):
             replace = self.merge(row, True)
-            replace = replace[::-1]
-            self.board[i] = replace
+            blankSpots = 0
+            for i in reversed(replace):
+                if i == 0:
+                    blankSpots += 1
+                else:
+                    break
+            propOrder = [0 for i in range(len(replace))]
+            for i, el in enumerate(replace):
+                propOrder[(i + blankSpots) % len(propOrder)] = el
+            self.board[r] = propOrder
         self.randomInsert()
 
 
     def canMoveRight(self):
         testState = self.board.copy()
-        for i, row in enumerate(testState):
+        for r, row in enumerate(testState):
             replace = self.merge(row, False)
-            replace = replace[::-1]
-            testState[i] = replace
+            blankSpots = 0
+            for i in reversed(replace):
+                if i == 0:
+                    blankSpots += 1
+                else:
+                    break
+            propOrder = [0 for i in range(len(replace))]
+            for i, el in enumerate(replace):
+                propOrder[(i + blankSpots) % len(propOrder)] = el
+            testState[r] = propOrder
         if testState == self.board:
             return False
         else:
@@ -176,16 +202,17 @@ class Game:
         return store
 
     def getReward(self):
-        logReward = 0
-        emptyReward = 0
-        prev_reward = 0
+        highestEl = 0
+        rew = 0
         for row in self.board:
-            for element in row:
-                if element > prev_reward:
-                    prev_reward = element
-        reward = prev_reward
-        self.reward = reward
-        return reward
+            for col in row:
+                if col > highestEl:
+                    highestEl = col
+                if col != 0:
+                    rew += math.log(col, 2)
+        if highestEl > self.highest:
+            self.highest = highestEl
+        return rew
 
 
     def boardVector(self):
