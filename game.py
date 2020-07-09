@@ -23,6 +23,7 @@ class Game:
         self.reward = 0
         self.score = 0
         self.highest = 0
+        self.mergeCount = 0
         return self.getState(), self.boardVector()
 
     def randomInsert(self):
@@ -201,18 +202,36 @@ class Game:
         store.extend([0] * (len(nums) - len(store)))
         return store
 
+    def getMerges(self):
+        mergeCount = 0
+        for row in self.board:
+            for i in range(2):
+                if row[(2*i)] == row[(2*i)+1]:
+                    mergeCount +=1
+        for col in range(len(self.board[0])):
+            for i in range(2):
+                if self.board[(2*i)][col] == self.board[(2*i)+1][col]:
+                    mergeCount += 1
+        self.mergeCount = mergeCount
+
+
     def getReward(self):
+        reward = 0
+        empty = 0
         highestEl = 0
-        rew = 0
         for row in self.board:
             for col in row:
-                if col > highestEl:
-                    highestEl = col
                 if col != 0:
-                    rew += math.log(col, 2)
-        if highestEl > self.highest:
-            self.highest = highestEl
-        return rew
+                    if col > highestEl:
+                        highestEl = col
+                    reward += math.log(col, 2)
+                else:
+                    empty += 1
+        #reward += empty
+        #reward = math.log(highestEl, 2) ** 2
+        reward -= self.reward
+        self.reward = reward
+        return reward
 
 
     def boardVector(self):
@@ -263,6 +282,7 @@ class Game:
 
 
     def step(self, action):
+        self.getMerges()
         prev_state = self.board.copy()
         if action == 0:
             self.moveUp()

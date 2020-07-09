@@ -12,13 +12,13 @@ class Actuator(object):
 
     def __init__(self):
         self.episodes = 1000
-        self.gamma = 0.98
+        self.gamma = 0.99
         self.actor = actor.Actor(4)
         self.critic = critic.Critic()
-        actor_learning_rate = 1e-3
-        critic_learning_rate = 1e-2
-        self.actor_opt = Adam(actor_learning_rate)
-        self.critic_opt = Adam(critic_learning_rate)
+        actor_learning_rate = 1e-6
+        critic_learning_rate = 1e-8
+        self.actor_opt = Adam()
+        self.critic_opt = Adam()
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         actor_log_dir = 'logs/gradient_tape/' + current_time + '/actor'
         critic_log_dir = 'logs/gradient_tape/' + current_time + '/critic'
@@ -32,7 +32,7 @@ class Actuator(object):
     def train(self):
         env = game.Game()
 
-        for episode in range(1000):
+        for episode in range(10000):
             active = True
             entropy = tf.Variable(0.0)
 
@@ -48,8 +48,8 @@ class Actuator(object):
 
                     state = env.getNpState()
                     state = tf.expand_dims(state, 0)
-                    action_logits = self.actor(state)
-                    state_val = self.critic(state)
+                    action_logits = self.actor(state, training=True)
+                    state_val = self.critic(state, training=True)
 
                     possible_actions = env.getPossible()
                     action_mask = [[action in possible_actions for action in range(4)]]
@@ -92,7 +92,7 @@ class Actuator(object):
                 log_probs = tf.convert_to_tensor(log_probs)
                 advantages = tf.convert_to_tensor(advantages)
 
-                actor_loss = -tf.reduce_mean(log_probs * advantages) - 1e-4 * entropy
+                actor_loss = -tf.reduce_mean(log_probs * advantages) - 1e-5 * entropy
                 actor_loss = tf.squeeze(actor_loss)
                 critic_loss = tf.reduce_mean(tf.math.pow(advantages, 2))
 
@@ -104,7 +104,7 @@ class Actuator(object):
 
             del tape
 
-            self._log(actor_loss, critic_loss, reward, episode)
+            self._log(actor_loss, critic_loss, np.sum(rewards), episode)
 
 
     @tf.function
