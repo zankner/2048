@@ -12,11 +12,11 @@ class Actuator(object):
 
     def __init__(self):
         self.episodes = 1000
-        self.gamma = 0.99
+        self.gamma = 0.95
         self.actor = actor.Actor(4)
         self.critic = critic.Critic()
-        actor_learning_rate = 1e-6
-        critic_learning_rate = 1e-8
+        actor_learning_rate = 1e-4
+        critic_learning_rate = 1e-4
         self.actor_opt = Adam()
         self.critic_opt = Adam()
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -75,8 +75,10 @@ class Actuator(object):
                 for row in env.board:
                     print(row)
 
+                rewards[-1] -= 10
+
                 state = tf.expand_dims(state, 0)
-                q_val_terminal = self.critic(state)
+                q_val_terminal = self.critic(state, training=True)
 
                 q_vals = []
                 for i in range(len(rewards) - 1):
@@ -92,7 +94,7 @@ class Actuator(object):
                 log_probs = tf.convert_to_tensor(log_probs)
                 advantages = tf.convert_to_tensor(advantages)
 
-                actor_loss = -tf.reduce_mean(log_probs * advantages) - 1e-5 * entropy
+                actor_loss = -tf.reduce_mean(log_probs * advantages) - 1e-4 * entropy
                 actor_loss = tf.squeeze(actor_loss)
                 critic_loss = tf.reduce_mean(tf.math.pow(advantages, 2))
 

@@ -216,22 +216,15 @@ class Game:
 
 
     def getReward(self):
-        reward = 0
-        empty = 0
         highestEl = 0
         for row in self.board:
             for col in row:
-                if col != 0:
-                    if col > highestEl:
-                        highestEl = col
-                    reward += math.log(col, 2)
-                else:
-                    empty += 1
-        #reward += empty
-        #reward = math.log(highestEl, 2) ** 2
-        reward -= self.reward
-        self.reward = reward
-        return reward
+                if col > highestEl:
+                    highestEl = col
+        highestEl = math.log(highestEl, 2)
+        highestEl = highestEl / math.log(2048, 2)
+        reward = highestEl + self.checkGameActive()
+        return highestEl
 
 
     def boardVector(self):
@@ -277,7 +270,8 @@ class Game:
 
     def getNpState(self):
         board = np.asarray(self.board)
-        board = np.reshape(board, [16])
+        #board = np.reshape(board, [16])
+        board = board / np.linalg.norm(board)
         return board
 
 
