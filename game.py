@@ -226,8 +226,8 @@ class Game:
         reward = 0 
         highestEl = math.log(highestEl, 2)
         if highestEl > self.highest:
-            reward += highestEl
-        reward += self.mergeCount
+            reward += highestEl / math.log(2048, 2)
+        reward += self.mergeCount / 16
         return reward
 
 
@@ -273,10 +273,19 @@ class Game:
         return power_mat
 
     def getNpState(self):
-        board = np.asarray(self.board)
-        #board = np.reshape(board, [16])
-        board = board / np.linalg.norm(board)
-        return board
+        oneHotBoard = []
+        for row in self.board:
+            oneHotRow = []
+            for col in row:
+                oneHotCol = [0.0 for i in range(16)]
+                if col == 0:
+                    logCol = 0
+                else:
+                    logCol = int(math.log(col, 2))
+                oneHotCol[logCol] = 1.0
+                oneHotRow.append(oneHotCol)
+            oneHotBoard.append(oneHotRow)
+        return oneHotBoard
 
 
     def step(self, action):

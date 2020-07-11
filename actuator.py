@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.losses import categorical_crossentropy
+from tensorflow.keras.losses import categorical_crossentropy, Huber
 import datetime
 import numpy as np
 import game
@@ -17,9 +17,10 @@ class Actuator(object):
         self.actor = actor.Actor(4)
         self.critic = critic.Critic()
         actor_learning_rate = 1e-4
-        critic_learning_rate = 1e-4
+        critic_learning_rate = 1e-3
         self.actor_opt = Adam(actor_learning_rate)
         self.critic_opt = Adam(critic_learning_rate)
+        self.critic_loss = Huber()
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         actor_log_dir = 'logs/gradient_tape/' + current_time + '/actor'
         critic_log_dir = 'logs/gradient_tape/' + current_time + '/critic'
@@ -46,7 +47,6 @@ class Actuator(object):
             counter = 0
             with tf.GradientTape(persistent=True) as tape:
                 while active:
-
                     state = env.getNpState()
                     state = tf.expand_dims(state, 0)
                     action_logits = self.actor(state, training=True)
@@ -78,6 +78,7 @@ class Actuator(object):
 
                 rewards[-1] -= 10
 
+
                 state = tf.expand_dims(state, 0)
                 q_val_terminal = self.critic(state, training=True)
 
@@ -90,14 +91,17 @@ class Actuator(object):
                 vals = tf.convert_to_tensor(vals)
                 q_vals = tf.convert_to_tensor(q_vals)
 
+                q_vals = (q_vals - np.mean(q_vals)) / (np.std(q_vals) + 1e-6)
+
                 advantages = q_vals - vals
+
 
                 log_probs = tf.convert_to_tensor(log_probs)
                 advantages = tf.convert_to_tensor(advantages)
 
                 actor_loss = -tf.reduce_mean(log_probs * advantages) - 1e-4 * entropy
                 actor_loss = tf.squeeze(actor_loss)
-                critic_loss = tf.reduce_mean(tf.math.pow(advantages, 2))
+                critic_loss = tf.reduce_mean(self.critic_loss(vals, q_vals))
 
             actor_gradients = tape.gradient(actor_loss, self.actor.trainable_variables)
             self.actor_opt.apply_gradients(zip(actor_gradients, self.actor.trainable_variables))
