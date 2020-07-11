@@ -76,14 +76,6 @@ class Actuator(object):
                 for row in env.board:
                     print(row)
 
-                gameSum = 0
-                for row in env.board:
-                    for col in row:
-                        if col != 0:
-                            gameSum += math.log(col, 2)
-
-                rewards = [gameSum for i in range(len(rewards))]
-
                 rewards[-1] -= 10
 
                 state = tf.expand_dims(state, 0)

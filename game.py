@@ -24,6 +24,8 @@ class Game:
         self.score = 0
         self.highest = 0
         self.mergeCount = 0
+        self.highest = 0
+        self.empty = 0
         return self.getState(), self.boardVector()
 
     def randomInsert(self):
@@ -221,10 +223,12 @@ class Game:
             for col in row:
                 if col > highestEl:
                     highestEl = col
+        reward = 0 
         highestEl = math.log(highestEl, 2)
-        highestEl = highestEl / math.log(2048, 2)
-        reward = highestEl + self.checkGameActive()
-        return highestEl
+        if highestEl > self.highest:
+            reward += highestEl
+        reward += self.mergeCount
+        return reward
 
 
     def boardVector(self):
