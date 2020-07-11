@@ -8,8 +8,9 @@ class Actor(Model):
   def __init__(self, action_dim):
     super(Actor, self).__init__()
     # Define layers of the network:
-    self.actor_conv_0 = Conv1D(16,2, activation='relu')
-    self.actor_pool_0 = MaxPooling1D(2, 1)
+    self.actor_conv_0 = Conv1D(32,2, activation='relu')
+    self.actor_conv_1 = Conv1D(10,2, activation='relu')
+    self.actor_pool_1 = MaxPooling1D(2, 1)
     self.actor_flatten_0 = Flatten()
     self.actor_dense_0 = Dense(512, activation='relu')
     self.actor_dense_1 = Dense(256, activation='relu')
@@ -43,11 +44,14 @@ class Actor(Model):
     #    x = Dropout(.3)(x)
     #x = self.norm_0(x)
     #x = self.actor_dense_4(x)
-    x = self.actor_conv_0(x)
-    x = self.actor_pool_0(x)
+    #x = self.actor_conv_0(x)
+    #if training:
+    #    x = Dropout(.5)(x)
+    x = self.actor_conv_1(x)
+    x = self.actor_pool_1(x)
     x = self.actor_flatten_0(x)
     if training:
-        x = Dropout(.3)(x)
+        x = Dropout(.1)(x)
     x = self.norm_0(x)
     x = self.actor_dense_4(x)
     return x

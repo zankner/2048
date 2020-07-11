@@ -6,19 +6,20 @@ import numpy as np
 import game
 import actor
 import critic
+import math
 
 
 class Actuator(object):
 
     def __init__(self):
         self.episodes = 1000
-        self.gamma = 0.95
+        self.gamma = 0.99
         self.actor = actor.Actor(4)
         self.critic = critic.Critic()
         actor_learning_rate = 1e-4
         critic_learning_rate = 1e-4
-        self.actor_opt = Adam()
-        self.critic_opt = Adam()
+        self.actor_opt = Adam(actor_learning_rate)
+        self.critic_opt = Adam(critic_learning_rate)
         current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         actor_log_dir = 'logs/gradient_tape/' + current_time + '/actor'
         critic_log_dir = 'logs/gradient_tape/' + current_time + '/critic'
@@ -32,7 +33,7 @@ class Actuator(object):
     def train(self):
         env = game.Game()
 
-        for episode in range(10000):
+        for episode in range(100000):
             active = True
             entropy = tf.Variable(0.0)
 
@@ -74,6 +75,14 @@ class Actuator(object):
                 print('*' * 6)
                 for row in env.board:
                     print(row)
+
+                gameSum = 0
+                for row in env.board:
+                    for col in row:
+                        if col != 0:
+                            gameSum += math.log(col, 2)
+
+                rewards = [gameSum for i in range(len(rewards))]
 
                 rewards[-1] -= 10
 
