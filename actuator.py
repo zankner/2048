@@ -80,12 +80,12 @@ class Actuator(object):
 
 
                 state = tf.expand_dims(state, 0)
-                q_val_terminal = self.critic(state, training=True)
+                q_val = self.critic(state, training=True)
 
-                q_vals = []
-                for i in range(len(rewards) - 1):
-                    q_vals.append(rewards[i] + self.gamma * vals[i + 1])
-                q_vals.append(rewards[-1] + self.gamma * q_val_terminal)
+                q_vals = [0 for i in range(len(rewards))]
+                for t in reversed(range(len(rewards))):
+                    q_val = rewards[t] + self.gamma * q_val
+                    q_vals[t] = q_val
 
                 log_probs = tf.convert_to_tensor(log_probs)
                 vals = tf.convert_to_tensor(vals)
