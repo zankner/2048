@@ -16,8 +16,8 @@ class Actuator(object):
         self.gamma = 0.99
         self.actor = actor.Actor(4)
         self.critic = critic.Critic()
-        actor_learning_rate = 1e-4
-        critic_learning_rate = 1e-3
+        actor_learning_rate = 5e-3
+        critic_learning_rate = 5e-3
         self.actor_opt = Adam(actor_learning_rate)
         self.critic_opt = Adam(critic_learning_rate)
         self.critic_loss = Huber()
@@ -25,16 +25,18 @@ class Actuator(object):
         actor_log_dir = 'logs/gradient_tape/' + current_time + '/actor'
         critic_log_dir = 'logs/gradient_tape/' + current_time + '/critic'
         reward_log_dir = 'logs/gradient_tape/' + current_time + '/reward'
+        entropy_log_dir = 'logs/gradient_tape/' + current_time + '/entropy'
         self.actor_summary_writer = tf.summary.create_file_writer(actor_log_dir)
         self.critic_summary_writer = tf.summary.create_file_writer(critic_log_dir)
         self.reward_summary_writer = tf.summary.create_file_writer(reward_log_dir)
+        self.entropy_summary_writer = tf.summary.create_file_writer(entropy_log_dir)
         self.actor_save_dir = 'saved_models/' + current_time + '/actor'
         self.critic_save_dir = 'saved_models/' + current_time + '/critic'
 
     def train(self):
         env = game.Game()
 
-        for episode in range(100000):
+        for episode in range(10000):
             active = True
             entropy = tf.Variable(0.0)
 
@@ -91,8 +93,6 @@ class Actuator(object):
                 vals = tf.convert_to_tensor(vals)
                 q_vals = tf.convert_to_tensor(q_vals)
 
-                q_vals = (q_vals - np.mean(q_vals)) / (np.std(q_vals) + 1e-6)
-
                 advantages = q_vals - vals
 
 
@@ -111,7 +111,7 @@ class Actuator(object):
 
             del tape
 
-            self._log(actor_loss, critic_loss, np.sum(rewards), episode)
+            self._log(actor_loss, critic_loss, np.sum(rewards), tf.squeeze(entropy), episode)
 
 
     @tf.function
@@ -120,13 +120,15 @@ class Actuator(object):
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
     
-    def _log(self, actor_loss, critic_loss, reward, epoch):
+    def _log(self, actor_loss, critic_loss, reward, entropy, epoch):
         with self.actor_summary_writer.as_default():
             tf.summary.scalar('actor', actor_loss, step=epoch)
         with self.critic_summary_writer.as_default():
             tf.summary.scalar('critic', critic_loss, step=epoch)
         with self.reward_summary_writer.as_default():
             tf.summary.scalar('reward', reward, step=epoch)
+        with self.entropy_summary_writer.as_default():
+            tf.summary.scalar('entropy', entropy, step=epoch)
 
     def _save(self):
         self.actor.save(self.actor_save_dir, include_optimizer=False, save_format='tf')

@@ -14,8 +14,8 @@ class Actor(Model):
     self.actor_pool_1 = MaxPooling2D(2)
     self.actor_flatten_0 = Flatten()
     self.actor_dense_0 = Dense(256, activation='relu')
-    self.actor_dense_1 = Dense(256, activation='relu')
-    self.actor_dense_2 = Dense(32, activation='relu')
+    self.actor_dense_1 = Dense(128, activation='relu')
+    self.actor_dense_2 = Dense(64, activation='relu')
     self.actor_dense_3 = Dense(16, activation='relu')
     self.actor_dense_4 = Dense(action_dim)
     self.norm_0 = BatchNormalization()
@@ -27,19 +27,17 @@ class Actor(Model):
     # Call layers of network on input x
     # Use the training variable to handle adding layers such as Dropout
     # and Batch Norm only during training
-    x = self.actor_conv_0(x)
-    x = self.actor_pool_0(x)
-    if training:
-        x = Dropout(.1)(x)
-    x = self.actor_conv_1(x)
-    x = self.actor_pool_1(x)
-    x = self.actor_flatten_0(x)
-    if training:
-        x = Dropout(.1)(x)
-    x = self.norm_0(x)
     x = self.actor_dense_0(x)
     if training:
         x = Dropout(.1)(x)
+    x = self.norm_0(x)
+    x = self.actor_dense_1(x)
+    if training:
+        x = Dropout(.1)(x)
     x = self.norm_1(x)
+    x = self.actor_dense_2(x)
+    if training:
+        x = Dropout(.1)(x)
+    x = self.norm_2(x)
     x = self.actor_dense_4(x)
     return x

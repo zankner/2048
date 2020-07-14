@@ -24,19 +24,17 @@ class Critic(Model):
     self.norm_3 = BatchNormalization()
 
   def call(self, x, training=False):
-    x = self.critic_conv_0(x)
-    x = self.critic_pool_0(x)
-    if training:
-        x = Dropout(.1)(x)
-    x = self.critic_conv_1(x)
-    x = self.critic_pool_1(x)
-    x = self.critic_flatten_0(x)
-    if training:
-        x = Dropout(.1)(x)
-    x = self.norm_0(x)
     x = self.critic_dense_0(x)
     if training:
         x = Dropout(.1)(x)
+    x = self.norm_0(x)
+    x = self.critic_dense_1(x)
+    if training:
+        x = Dropout(.1)(x)
     x = self.norm_1(x)
+    x = self.critic_dense_2(x)
+    if training:
+        x = Dropout(.1)(x)
+    x = self.norm_2(x)
     x = self.critic_dense_4(x)
     return x
