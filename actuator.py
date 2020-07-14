@@ -10,7 +10,6 @@ import math
 
 
 class Actuator(object):
-
     def __init__(self):
         self.episodes = 1000
         self.gamma = 0.99
@@ -26,10 +25,14 @@ class Actuator(object):
         critic_log_dir = 'logs/gradient_tape/' + current_time + '/critic'
         reward_log_dir = 'logs/gradient_tape/' + current_time + '/reward'
         entropy_log_dir = 'logs/gradient_tape/' + current_time + '/entropy'
-        self.actor_summary_writer = tf.summary.create_file_writer(actor_log_dir)
-        self.critic_summary_writer = tf.summary.create_file_writer(critic_log_dir)
-        self.reward_summary_writer = tf.summary.create_file_writer(reward_log_dir)
-        self.entropy_summary_writer = tf.summary.create_file_writer(entropy_log_dir)
+        self.actor_summary_writer = tf.summary.create_file_writer(
+            actor_log_dir)
+        self.critic_summary_writer = tf.summary.create_file_writer(
+            critic_log_dir)
+        self.reward_summary_writer = tf.summary.create_file_writer(
+            reward_log_dir)
+        self.entropy_summary_writer = tf.summary.create_file_writer(
+            entropy_log_dir)
         self.actor_save_dir = 'saved_models/' + current_time + '/actor'
         self.critic_save_dir = 'saved_models/' + current_time + '/critic'
 
@@ -55,16 +58,22 @@ class Actuator(object):
                     state_val = self.critic(state, training=True)
 
                     possible_actions = env.getPossible()
-                    action_mask = [[action in possible_actions for action in range(4)]]
-                    masked_action_logits = tf.expand_dims(tf.boolean_mask(action_logits, action_mask), 0)
+                    action_mask = [[
+                        action in possible_actions for action in range(4)
+                    ]]
+                    masked_action_logits = tf.expand_dims(
+                        tf.boolean_mask(action_logits, action_mask), 0)
                     masked_action_dist = tf.nn.softmax(masked_action_logits)
-                    possible_index = tf.squeeze(tf.random.categorical(
-                        tf.math.log(masked_action_dist), 1)).numpy()
-                    prob = tf.squeeze(tf.gather(masked_action_dist, [possible_index], axis=1))
+                    possible_index = tf.squeeze(
+                        tf.random.categorical(tf.math.log(masked_action_dist),
+                                              1)).numpy()
+                    prob = tf.squeeze(
+                        tf.gather(masked_action_dist, [possible_index],
+                                  axis=1))
                     log_prob = tf.math.log(prob)
-                    
+
                     entropy = entropy + categorical_crossentropy(
-                            masked_action_dist, masked_action_dist)
+                        masked_action_dist, masked_action_dist)
 
                     action = possible_actions[possible_index]
 
@@ -80,7 +89,6 @@ class Actuator(object):
 
                 rewards[-1] -= 10
 
-
                 state = tf.expand_dims(state, 0)
                 q_val = self.critic(state, training=True)
 
@@ -95,31 +103,34 @@ class Actuator(object):
 
                 advantages = q_vals - vals
 
-
                 log_probs = tf.convert_to_tensor(log_probs)
                 advantages = tf.convert_to_tensor(advantages)
 
-                actor_loss = -tf.reduce_mean(log_probs * advantages) - 1e-4 * entropy
+                actor_loss = -tf.reduce_mean(
+                    log_probs * advantages) - 1e-4 * entropy
                 actor_loss = tf.squeeze(actor_loss)
                 critic_loss = tf.reduce_mean(self.critic_loss(vals, q_vals))
 
-            actor_gradients = tape.gradient(actor_loss, self.actor.trainable_variables)
-            self.actor_opt.apply_gradients(zip(actor_gradients, self.actor.trainable_variables))
+            actor_gradients = tape.gradient(actor_loss,
+                                            self.actor.trainable_variables)
+            self.actor_opt.apply_gradients(
+                zip(actor_gradients, self.actor.trainable_variables))
 
-            critic_gradients = tape.gradient(critic_loss, self.critic.trainable_variables)
-            self.critic_opt.apply_gradients(zip(critic_gradients, self.critic.trainable_variables))
+            critic_gradients = tape.gradient(critic_loss,
+                                             self.critic.trainable_variables)
+            self.critic_opt.apply_gradients(
+                zip(critic_gradients, self.critic.trainable_variables))
 
             del tape
 
-            self._log(actor_loss, critic_loss, np.sum(rewards), tf.squeeze(entropy), episode)
-
+            self._log(actor_loss, critic_loss, np.sum(rewards),
+                      tf.squeeze(entropy), episode)
 
     @tf.function
     def _update(self, loss, tape, optimizer, model):
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-    
     def _log(self, actor_loss, critic_loss, reward, entropy, epoch):
         with self.actor_summary_writer.as_default():
             tf.summary.scalar('actor', actor_loss, step=epoch)
@@ -131,8 +142,12 @@ class Actuator(object):
             tf.summary.scalar('entropy', entropy, step=epoch)
 
     def _save(self):
-        self.actor.save(self.actor_save_dir, include_optimizer=False, save_format='tf')
-        self.critic.save(self.critic_save_dir, include_optimizer=False, save_format='tf')
+        self.actor.save(self.actor_save_dir,
+                        include_optimizer=False,
+                        save_format='tf')
+        self.critic.save(self.critic_save_dir,
+                         include_optimizer=False,
+                         save_format='tf')
 
 
 a = Actuator()
