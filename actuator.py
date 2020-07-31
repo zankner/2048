@@ -15,8 +15,8 @@ class Actuator(object):
         self.gamma = 0.99
         self.actor = actor.Actor(4)
         self.critic = critic.Critic()
-        actor_learning_rate = 5e-3
-        critic_learning_rate = 5e-3
+        actor_learning_rate = 1e-4
+        critic_learning_rate = 5e-4
         self.actor_opt = Adam(actor_learning_rate)
         self.critic_opt = Adam(critic_learning_rate)
         self.critic_loss = Huber()
@@ -41,8 +41,8 @@ class Actuator(object):
 
         for episode in range(10000):
             active = True
-            entropy = tf.Variable(0.0)
 
+            entropy = tf.Variable(0.0)
             env.reset()
 
             rewards = []
@@ -73,7 +73,7 @@ class Actuator(object):
                     log_prob = tf.math.log(prob)
 
                     entropy = entropy + categorical_crossentropy(
-                        masked_action_dist, masked_action_dist)
+                        tf.nn.softmax(masked_action_dist),tf.nn.softmax(masked_action_dist))
 
                     action = possible_actions[possible_index]
 
@@ -107,7 +107,7 @@ class Actuator(object):
                 advantages = tf.convert_to_tensor(advantages)
 
                 actor_loss = -tf.reduce_mean(
-                    log_probs * advantages) - 1e-4 * entropy
+                    log_probs * advantages) - 5e-4 * entropy
                 actor_loss = tf.squeeze(actor_loss)
                 critic_loss = tf.reduce_mean(self.critic_loss(vals, q_vals))
 

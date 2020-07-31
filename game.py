@@ -5,19 +5,18 @@ import numpy as np
 
 
 class Game:
-
     def __init__(self):
-        self.observation_space = (1,16)
+        self.observation_space = (1, 16)
         self.action_space = 4
 
     def reset(self):
-        self.board = [[0,0,0,0] for i in range(4)]
-        firstRow = random.randint(0,len(self.board)-1)
-        secondRow = random.randint(0,len(self.board)-1)
-        firstCol = random.randint(0,len(self.board[0])-1)
-        secondCol = random.randint(0,len(self.board[0])-1)
+        self.board = [[0, 0, 0, 0] for i in range(4)]
+        firstRow = random.randint(0, len(self.board) - 1)
+        secondRow = random.randint(0, len(self.board) - 1)
+        firstCol = random.randint(0, len(self.board[0]) - 1)
+        secondCol = random.randint(0, len(self.board[0]) - 1)
         while firstCol == secondCol:
-            secondCol = random.randint(0,len(self.board[0])-1)
+            secondCol = random.randint(0, len(self.board[0]) - 1)
         self.board[firstRow][firstCol] = 2
         self.board[secondRow][secondCol] = 2
         self.reward = 0
@@ -34,11 +33,11 @@ class Game:
             if 0 in row:
                 for j, element in enumerate(row):
                     if element == 0:
-                        possibleCoords.append([i,j])
+                        possibleCoords.append([i, j])
         if len(possibleCoords) != 0:
-            randomCoord = possibleCoords[random.randint(0,len(possibleCoords)) - 1]
+            randomCoord = possibleCoords[
+                random.randint(0, len(possibleCoords)) - 1]
             self.board[randomCoord[0]][randomCoord[1]] = 2
-
 
     def checkGameActive(self):
         possible = self.getPossible()
@@ -46,7 +45,6 @@ class Game:
             return False
         else:
             return True
-
 
     def moveUp(self):
         for col in range(len(self.board[0])):
@@ -57,7 +55,6 @@ class Game:
             for i in range(len(self.board)):
                 self.board[i][col] = replace[i]
         self.randomInsert()
-
 
     def canMoveUp(self):
         testState = copy.deepcopy(self.board)
@@ -72,7 +69,6 @@ class Game:
             return False
         else:
             return True
-
 
     def moveDown(self):
         for col in range(len(self.board[0])):
@@ -92,7 +88,6 @@ class Game:
             for i in range(len(self.board)):
                 self.board[i][col] = propOrder[i]
         self.randomInsert()
-
 
     def canMoveDown(self):
         testState = copy.deepcopy(self.board)
@@ -117,7 +112,6 @@ class Game:
         else:
             return True
 
-
     def moveRight(self):
         for r, row in enumerate(self.board):
             replace = self.merge(row, True)
@@ -132,7 +126,6 @@ class Game:
                 propOrder[(i + blankSpots) % len(propOrder)] = el
             self.board[r] = propOrder
         self.randomInsert()
-
 
     def canMoveRight(self):
         testState = self.board.copy()
@@ -153,13 +146,11 @@ class Game:
         else:
             return True
 
-
     def moveLeft(self):
         for i, row in enumerate(self.board):
             replace = self.merge(row, True)
             self.board[i] = replace
         self.randomInsert()
-
 
     def canMoveLeft(self):
         testState = self.board.copy()
@@ -170,7 +161,6 @@ class Game:
             return False
         else:
             return True
-
 
     def getPossible(self):
         possibleActions = []
@@ -183,7 +173,6 @@ class Game:
         if self.canMoveLeft() == True:
             possibleActions.append(3)
         return possibleActions
-
 
     def merge(self, nums, acting):
         prev = None
@@ -208,14 +197,13 @@ class Game:
         mergeCount = 0
         for row in self.board:
             for i in range(2):
-                if row[(2*i)] == row[(2*i)+1]:
-                    mergeCount +=1
+                if row[(2 * i)] == row[(2 * i) + 1]:
+                    mergeCount += 1
         for col in range(len(self.board[0])):
             for i in range(2):
-                if self.board[(2*i)][col] == self.board[(2*i)+1][col]:
+                if self.board[(2 * i)][col] == self.board[(2 * i) + 1][col]:
                     mergeCount += 1
         self.mergeCount = mergeCount
-
 
     def getReward(self):
         reward = 0
@@ -223,9 +211,8 @@ class Game:
             for col in row:
                 if col > 0:
                     reward += math.log(col, 2)
-        reward /= (math.log(2048, 2) * 16)
+        #reward /= (math.log(2048, 2) * 16)
         return reward
-
 
     def boardVector(self):
         state = []
@@ -258,13 +245,13 @@ class Game:
             return math.log(max(curState), 2)
 
     def getState(self):
-        power_mat = np.zeros(shape=(4,4,16),dtype=np.float32)
+        power_mat = np.zeros(shape=(4, 4, 16), dtype=np.float32)
         for i in range(4):
             for j in range(4):
-                if(self.board[i][j]==0):
+                if (self.board[i][j] == 0):
                     power_mat[i][j][0] = 1.0
                 else:
-                    power = int(math.log(self.board[i][j],2))
+                    power = int(math.log(self.board[i][j], 2))
                     power_mat[i][j][power] = 1.0
         return power_mat
 
@@ -276,7 +263,6 @@ class Game:
         board = np.asarray(board)
         board = board / np.linalg.norm(board)
         return board
-
 
     def step(self, action):
         prev_state = self.board.copy()
