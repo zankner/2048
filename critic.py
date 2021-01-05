@@ -13,7 +13,7 @@ class Critic(Model):
     self.critic_pool_0 = MaxPooling2D(2)
     self.critic_pool_1 = MaxPooling2D(2)
     self.critic_flatten_0 = Flatten()
-    self.critic_dense_0 = Dense(256, activation='relu')
+    self.critic_dense_0 = Dense(512, activation='relu')
     self.critic_dense_1 = Dense(256, activation='relu')
     self.critic_dense_2 = Dense(128, activation='relu')
     self.critic_dense_3 = Dense(64, activation='relu')

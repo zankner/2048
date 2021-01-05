@@ -206,12 +206,13 @@ class Game:
         self.mergeCount = mergeCount
 
     def getReward(self):
-        reward = 0
+        highestEl = 0
         for row in self.board:
             for col in row:
-                if col > 0:
-                    reward += math.log(col, 2)
-        #reward /= (math.log(2048, 2) * 16)
+                if col > highestEl:
+                    highestEl = math.log(col, 2)
+        highestEl /= math.log(2048, 2)
+        reward = highestEl + 1
         return reward
 
     def boardVector(self):

@@ -39,7 +39,7 @@ class Actuator(object):
     def train(self):
         env = game.Game()
 
-        for episode in range(10000):
+        for episode in range(40000):
             active = True
 
             entropy = tf.Variable(0.0)
@@ -49,7 +49,6 @@ class Actuator(object):
             log_probs = []
             vals = []
 
-            counter = 0
             with tf.GradientTape(persistent=True) as tape:
                 while active:
                     state = env.getNpState()
@@ -72,8 +71,10 @@ class Actuator(object):
                                   axis=1))
                     log_prob = tf.math.log(prob)
 
-                    entropy = entropy + categorical_crossentropy(
-                        tf.nn.softmax(masked_action_dist),tf.nn.softmax(masked_action_dist))
+                    entropy = entropy - tf.math.reduce_sum(masked_action_dist * tf.math.log(masked_action_dist))
+
+                    # entropy = entropy + categorical_crossentropy(
+                    #     masked_action_dist, masked_action_dist)
 
                     action = possible_actions[possible_index]
 
@@ -106,8 +107,8 @@ class Actuator(object):
                 log_probs = tf.convert_to_tensor(log_probs)
                 advantages = tf.convert_to_tensor(advantages)
 
-                actor_loss = -tf.reduce_mean(
-                    log_probs * advantages) - 5e-4 * entropy
+                actor_loss = -tf.reduce_sum(
+                    log_probs * advantages) - 1e-4 * entropy
                 actor_loss = tf.squeeze(actor_loss)
                 critic_loss = tf.reduce_mean(self.critic_loss(vals, q_vals))
 
